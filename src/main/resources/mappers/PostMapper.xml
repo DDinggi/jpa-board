@@ -3,6 +3,7 @@
 
 <mapper namespace="com.study.domain.post.PostMapper">
 
+
     <!-- tb_post 테이블 전체 컬럼 -->
     <sql id="postColumns">
         id
@@ -18,7 +19,7 @@
 
 
     <!-- 게시글 저장 -->
-    <insert id="save" parameterType="com.study.domain.post.PostRequest">
+    <insert id="save" parameterType="com.study.domain.post.PostRequest" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO tb_post (
         <include refid="postColumns" />
         ) VALUES (
@@ -81,5 +82,7 @@
         ORDER BY
         id DESC
     </select>
+
+
 
 </mapper>
