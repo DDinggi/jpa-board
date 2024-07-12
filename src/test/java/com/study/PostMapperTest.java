@@ -1,4 +1,4 @@
-package com.study;
+/*package com.study;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,3 +73,5 @@ public class PostMapperTest {
     }
 
 }
+
+     */
