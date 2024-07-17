@@ -2,10 +2,6 @@ package com.study.domain.comment;
 
 import com.study.common.paging.Pagination;
 import com.study.common.paging.PagingResponse;
-import com.study.domain.comment.CommentMapper;
-import com.study.domain.comment.CommentRequest;
-import com.study.domain.comment.CommentResponse;
-import com.study.domain.comment.CommentSearchDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
