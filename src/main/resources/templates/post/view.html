@@ -60,6 +60,10 @@
             <div class="cm_list">
 
             </div>
+            <!--/* 페이지네이션 렌더링 영역 */-->
+            <div class="paging">
+
+            </div>
             <!--/* 댓글 수정 popup */-->
             <div id="commentUpdatePopup" class="popLayer">
                 <h3>댓글 수정</h3>
@@ -93,6 +97,8 @@
 <th:block layout:fragment="script">
     <script th:inline="javascript">
         /*<![CDATA[*/
+
+
 
         // 게시글 삭제
         function deletePost() {
@@ -154,105 +160,52 @@
             isValid(content, '댓글');
 
             const postId = [[ ${post.id} ]];
+            const uri = `/posts/${postId}/comments`;
             const params = {
                 postId : postId,
                 content : content.value,
                 writer : '홍길동'
             }
 
-            $.ajax({
-                url : `/posts/${postId}/comments`,
-                type : 'post',
-                contentType : 'application/json; charset=utf-8',
-                dataType : 'json',
-                data : JSON.stringify(params),
-                async : false,
-                success : function (response) {
-                    alert('저장되었습니다.');
-                    content.value = '';
-                    document.getElementById('counter').innerText = '0/300자';
-                    findAllComment();
-                },
-                error : function (request, status, error) {
-                    console.log(error)
-                }
-            })
-        }
-
-
-        window.onload = () => {
-            findAllComment();
+            callApi(uri, 'post', params);
+            alert('저장되었습니다.');
+            content.value = '';
+            document.getElementById('counter').innerText = '0/300자';
+            findAllComment(1);
         }
 
 
         // 전체 댓글 조회
-        function findAllComment() {
+        function findAllComment(page) {
 
-            const postId = [[ ${post.id} ]];
+            const uriPage = new URLSearchParams(location.search).get('page');
+            page = (page) ? page : (uriPage ? Number(uriPage) : 1);
 
-            $.ajax({
-                url : `/posts/${postId}/comments`,
-                type : 'get',
-                dataType : 'json',
-                async : false,
-                success : function (response) {
+            const postId = [[ ${post.id}]];
+            const uri = `/posts/${postId}/comments`;
+            const params = {
+                page : page,
+                recordSize : 5,
+                pageSize : 10,
+                postId : postId,
+            }
 
-                    // 1. 조회된 데이터가 없는 경우
-                    if ( !response.length ) {
-                        document.querySelector('.cm_list').innerHTML = '<div class="cm_none"><p>등록된 댓글이 없습니다.</p></div>';
-                        return false;
-                    }
-
-                    // 2. 렌더링 할 HTML을 저장할 변수
-                    let commentHtml = '';
-
-                    // 3. 댓글 HTML 추가
-                    response.forEach(row => {
-                        commentHtml += `
-                        <div>
-                            <span class="writer_img"><img src="/images/default_profile.png" width="30" height="30" alt="기본 프로필 이미지"/></span>
-                            <p class="writer">
-                                <em>${row.writer}</em>
-                                <span class="date">${dayjs(row.createdDate).format('YYYY-MM-DD HH:mm')}</span>
-                            </p>
-                            <div class="cont"><div class="txt_con">${row.content}</div></div>
-                                <p class="func_btns">
-                                <button type="button" onclick="openCommentUpdatePopup(${row.id});" class="btns"><span class="icons icon_modify">수정</span></button>
-                                    <button type="button" onclick="deleteComment(${row.id});" class="btns"><span class="icons icon_del">삭제</span></button>
-                            </p>
-                        </div>
-                    `;
-                    })
-
-                    // 4. class가 "cm_list"인 요소를 찾아 HTML을 렌더링
-                    document.querySelector('.cm_list').innerHTML = commentHtml;
-                },
-                error : function (request, status, error) {
-                    console.log(error)
-                }
-            })
+            const response = getJson(uri, params);
+            const pagination = response.pagination;
+            drawComments(response.list);
+            drawPage(pagination, page);
         }
 
         // 댓글 수정 팝업 open
         function openCommentUpdatePopup(id) {
 
             const postId = [[ ${post.id} ]];
-
-            $.ajax({
-                url : `/posts/${postId}/comments/${id}`,
-                type : 'get',
-                dataType : 'json',
-                async : false,
-                success : function (response) {
-                    document.getElementById('modalWriter').value = response.writer;
-                    document.getElementById('modalContent').value = response.content;
-                    document.getElementById('commentUpdateBtn').setAttribute('onclick', `updateComment(${id})`);
-                    layerPop('commentUpdatePopup');
-                },
-                error : function (request, status, error) {
-                    console.log(error)
-                }
-            })
+            const uri = `/posts/${postId}/comments/${id}`;
+            const response = getJson(uri);
+            document.getElementById('modalWriter').value = response.writer;
+            document.getElementById('modalContent').value = response.content;
+            document.getElementById('commentUpdateBtn').setAttribute('onclick', `updateComment(${id})`);
+            layerPop('commentUpdatePopup');
         }
 
 
@@ -272,6 +225,7 @@
             isValid(content, '수정할 내용');
 
             const postId = [[ ${post.id} ]];
+            const uri = `/posts/${postId}/comments/${id}`;
             const params = {
                 id : id,
                 postId : postId,
@@ -279,24 +233,11 @@
                 writer : writer.value
             }
 
-            $.ajax({
-                url : `/posts/${postId}/comments/${id}`,
-                type : 'patch',
-                contentType : 'application/json; charset=utf-8',
-                dataType : 'json',
-                data : JSON.stringify(params),
-                async : false,
-                success : function (response) {
-                    alert('수정되었습니다.');
-                    closeCommentUpdatePopup();
-                    findAllComment();
-                },
-                error : function (request, status, error) {
-                    console.log(error)
-                }
-            })
+            callApi(uri, 'patch', params);
+            alert('수정되었습니다.');
+            closeCommentUpdatePopup();
+            findAllComment();
         }
-
         // 댓글 삭제
         function deleteComment(id) {
 
@@ -305,20 +246,40 @@
             }
 
             const postId = [[ ${post.id} ]];
+            const uri = `/posts/${postId}/comments/${id}`;
+            callApi(uri, 'delete');
+            alert('삭제되었습니다.');
+            findAllComment();
+        }
 
-            $.ajax({
-                url : `/posts/${postId}/comments/${id}`,
-                type : 'delete',
-                dataType : 'json',
-                async : false,
-                success : function (response) {
-                    alert('삭제되었습니다.');
-                    findAllComment();
-                },
-                error : function (request, status, error) {
-                    console.log(error)
-                }
+        // 댓글 HTML draw
+        function drawComments(list) {
+
+            if ( !list.length ) {
+                document.querySelector('.cm_list').innerHTML = '<div class="cm_none"><p>등록된 댓글이 없습니다.</p></div>';
+                return false;
+            }
+
+            let commentHtml = '';
+
+            list.forEach(row => {
+                commentHtml += `
+                <div>
+                    <span class="writer_img"><img src="/images/default_profile.png" width="30" height="30" alt="기본 프로필 이미지"/></span>
+                    <p class="writer">
+                        <em>${row.writer}</em>
+                        <span class="date">${dayjs(row.createdDate).format('YYYY-MM-DD HH:mm')}</span>
+                    </p>
+                    <div class="cont"><div class="txt_con">${row.content}</div></div>
+                    <p class="func_btns">
+                        <button type="button" onclick="openCommentUpdatePopup(${row.id});" class="btns"><span class="icons icon_modify">수정</span></button>
+                        <button type="button" onclick="deleteComment(${row.id});" class="btns"><span class="icons icon_del">삭제</span></button>
+                    </p>
+                </div>
+            `;
             })
+
+            document.querySelector('.cm_list').innerHTML = commentHtml;
         }
 
         // 페이지네이션 HTML draw
@@ -369,6 +330,7 @@
             const postId = new URLSearchParams(location.search).get('id');
             history.replaceState({}, '', location.pathname + `?id=${postId}&page=${currentPage.text}`);
         }
+
 
     </script>
 </th:block>

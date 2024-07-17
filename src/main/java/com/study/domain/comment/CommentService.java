@@ -1,9 +1,16 @@
 package com.study.domain.comment;
 
+import com.study.common.paging.Pagination;
+import com.study.common.paging.PagingResponse;
+import com.study.domain.comment.CommentMapper;
+import com.study.domain.comment.CommentRequest;
+import com.study.domain.comment.CommentResponse;
+import com.study.domain.comment.CommentSearchDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -56,11 +63,19 @@ public class CommentService {
 
     /**
      * 댓글 리스트 조회
-     * @param postId - 게시글 번호 (FK)
-     * @return 특정 게시글에 등록된 댓글 리스트
+     * @param params - search conditions
+     * @return list & pagination information
      */
-    public List<CommentResponse> findAllComment(final Long postId) {
-        return commentMapper.findAll(postId);
+    public PagingResponse<CommentResponse> findAllComment(final CommentSearchDto params) {
+
+        int count = commentMapper.count(params);
+        if (count < 1) {
+            return new PagingResponse<>(Collections.emptyList(), null);
+        }
+
+        Pagination pagination = new Pagination(count, params);
+        List<CommentResponse> list = commentMapper.findAll(params);
+        return new PagingResponse<>(list, pagination);
     }
 
 }

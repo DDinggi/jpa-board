@@ -79,6 +79,4 @@ public class PostService {
         return new PagingResponse<>(list, pagination);
     }
 
-
-
 }
