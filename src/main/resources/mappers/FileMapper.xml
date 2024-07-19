@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.study.domain.file.FileMapper">
+
+    <!-- tb_file 테이블 전체 컬럼 -->
+    <sql id="fileColumns">
+          id
+        , post_id
+        , original_name
+        , save_name
+        , size
+        , delete_yn
+        , created_date
+        , deleted_date
+    </sql>
+
+
+    <!-- 파일 정보 저장 -->
+    <insert id="saveAll" parameterType="list">
+        INSERT INTO tb_file (
+            <include refid="fileColumns" />
+        ) VALUES
+        <foreach item="file" collection="list" separator=",">
+        (
+              #{file.id}
+            , #{file.postId}
+            , #{file.originalName}
+            , #{file.saveName}
+            , #{file.size}
+            , 0
+            , NOW()
+            , NULL
+        )
+        </foreach>
+    </insert>
+
+
+    <!-- 파일 리스트 조회 -->
+    <select id="findAllByPostId" parameterType="long" resultType="com.study.domain.file.FileResponse">
+        SELECT
+            <include refid="fileColumns" />
+        FROM
+            tb_file
+        WHERE
+            delete_yn = 0
+            AND post_id = #{value}
+        ORDER BY
+            id
+    </select>
+
+
+    <!-- 파일 리스트 조회 -->
+    <select id="findAllByIds" parameterType="list" resultType="com.study.domain.file.FileResponse">
+        SELECT
+            <include refid="fileColumns" />
+        FROM
+            tb_file
+        WHERE
+            delete_yn = 0
+            AND id IN
+            <foreach item="id" collection="list" open="(" separator="," close=")">
+            #{id}
+            </foreach>
+        ORDER BY
+            id
+    </select>
+
+
+    <!-- 파일 삭제 -->
+    <delete id="deleteAllByIds" parameterType="list">
+        UPDATE tb_file
+        SET
+              delete_yn = 1
+            , deleted_date = NOW()
+        WHERE
+            id IN
+            <foreach item="id" collection="list" open="(" separator="," close=")">
+            #{id}
+            </foreach>
+    </delete>
+
+
+    <!-- 파일 상세정보 조회 -->
+    <select id="findById" parameterType="long" resultType="com.study.domain.file.FileResponse">
+        SELECT
+            <include refid="fileColumns" />
+        FROM
+            tb_file
+        WHERE
+            delete_yn = 0
+            AND id = #{value}
+    </select>
+
+</mapper>

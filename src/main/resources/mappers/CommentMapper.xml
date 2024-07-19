@@ -5,7 +5,7 @@
 
     <!-- tb_comment 테이블 전체 컬럼 -->
     <sql id="commentColumns">
-        id
+          id
         , post_id
         , content
         , writer
@@ -18,15 +18,15 @@
     <!-- 댓글 저장 -->
     <insert id="save" parameterType="com.study.domain.comment.CommentRequest" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO tb_comment (
-        <include refid="commentColumns" />
+            <include refid="commentColumns" />
         ) VALUES (
-        #{id}
-        , #{postId}
-        , #{content}
-        , #{writer}
-        , 0
-        , NOW()
-        , NULL
+              #{id}
+            , #{postId}
+            , #{content}
+            , #{writer}
+            , 0
+            , NOW()
+            , NULL
         )
     </insert>
 
@@ -34,11 +34,11 @@
     <!-- 댓글 상세정보 조회 -->
     <select id="findById" parameterType="long" resultType="com.study.domain.comment.CommentResponse">
         SELECT
-        <include refid="commentColumns" />
+            <include refid="commentColumns" />
         FROM
-        tb_comment
+            tb_comment
         WHERE
-        id = #{value}
+            id = #{value}
     </select>
 
 
@@ -46,9 +46,9 @@
     <update id="update" parameterType="com.study.domain.comment.CommentRequest">
         UPDATE tb_comment
         SET
-            modified_date = NOW()
-          , content = #{content}
-          , writer = #{writer}
+              modified_date = NOW()
+            , content = #{content}
+            , writer = #{writer}
         WHERE
             id = #{id}
     </update>
@@ -67,14 +67,14 @@
     <!-- 댓글 리스트 조회 -->
     <select id="findAll" parameterType="com.study.domain.comment.CommentSearchDto" resultType="com.study.domain.comment.CommentResponse">
         SELECT
-        <include refid="commentColumns" />
+            <include refid="commentColumns" />
         FROM
-        tb_comment
+            tb_comment
         WHERE
-        delete_yn = 0
-        AND post_id = #{postId}
+            delete_yn = 0
+            AND post_id = #{postId}
         ORDER BY
-        id DESC
+            id DESC
         LIMIT #{pagination.limitStart}, #{recordSize}
     </select>
 
@@ -87,7 +87,7 @@
             tb_comment
         WHERE
             delete_yn = 0
-          AND post_id = #{postId}
+            AND post_id = #{postId}
     </select>
 
 </mapper>

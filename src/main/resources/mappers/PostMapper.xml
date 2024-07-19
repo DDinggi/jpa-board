@@ -3,10 +3,9 @@
 
 <mapper namespace="com.study.domain.post.PostMapper">
 
-
     <!-- tb_post 테이블 전체 컬럼 -->
     <sql id="postColumns">
-        id
+          id
         , title
         , content
         , writer
@@ -41,9 +40,9 @@
                 <!-- 전체 검색일 때 -->
                 <otherwise>
                     AND (
-                    title LIKE CONCAT('%', #{keyword}, '%')
-                    OR content LIKE CONCAT('%', #{keyword}, '%')
-                    OR writer LIKE CONCAT('%', #{keyword}, '%')
+                           title LIKE CONCAT('%', #{keyword}, '%')
+                        OR content LIKE CONCAT('%', #{keyword}, '%')
+                        OR writer LIKE CONCAT('%', #{keyword}, '%')
                     )
                 </otherwise>
             </choose>
@@ -54,17 +53,17 @@
     <!-- 게시글 저장 -->
     <insert id="save" parameterType="com.study.domain.post.PostRequest" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO tb_post (
-        <include refid="postColumns" />
+            <include refid="postColumns" />
         ) VALUES (
-        #{id}
-        , #{title}
-        , #{content}
-        , #{writer}
-        , 0
-        , #{noticeYn}
-        , 0
-        , NOW()
-        , NULL
+              #{id}
+            , #{title}
+            , #{content}
+            , #{writer}
+            , 0
+            , #{noticeYn}
+            , 0
+            , NOW()
+            , NULL
         )
     </insert>
 
@@ -72,11 +71,11 @@
     <!-- 게시글 상세정보 조회 -->
     <select id="findById" parameterType="long" resultType="com.study.domain.post.PostResponse">
         SELECT
-        <include refid="postColumns" />
+            <include refid="postColumns" />
         FROM
-        tb_post
+            tb_post
         WHERE
-        id = #{value}
+            id = #{value}
     </select>
 
 
@@ -84,11 +83,11 @@
     <update id="update" parameterType="com.study.domain.post.PostRequest">
         UPDATE tb_post
         SET
-            modified_date = NOW()
-          , title = #{title}
-          , content = #{content}
-          , writer = #{writer}
-          , notice_yn = #{noticeYn}
+              modified_date = NOW()
+            , title = #{title}
+            , content = #{content}
+            , writer = #{writer}
+            , notice_yn = #{noticeYn}
         WHERE
             id = #{id}
     </update>
@@ -107,14 +106,14 @@
     <!-- 게시글 리스트 조회 -->
     <select id="findAll" parameterType="com.study.common.dto.SearchDto" resultType="com.study.domain.post.PostResponse">
         SELECT
-        <include refid="postColumns" />
+            <include refid="postColumns" />
         FROM
-        tb_post
+            tb_post
         WHERE
-        delete_yn = 0
-        <include refid="search" />
+            delete_yn = 0
+            <include refid="search" />
         ORDER BY
-        id DESC
+            id DESC
         LIMIT #{pagination.limitStart}, #{recordSize}
     </select>
 
@@ -122,13 +121,12 @@
     <!-- 게시글 수 카운팅 -->
     <select id="count" parameterType="com.study.common.dto.SearchDto" resultType="int">
         SELECT
-        COUNT(*)
+            COUNT(*)
         FROM
-        tb_post
+            tb_post
         WHERE
-        delete_yn = 0
-        <include refid="search" />
+            delete_yn = 0
+            <include refid="search" />
     </select>
-
 
 </mapper>
