@@ -5,65 +5,52 @@
 
     <!-- tb_post 테이블 전체 컬럼 -->
     <sql id="postColumns">
-          id
+        id
         , title
         , content
         , writer
         , view_cnt
         , notice_yn
         , delete_yn
+        , type  <!-- 게시판 유형 추가 -->
         , created_date
         , modified_date
     </sql>
 
-
-    <!-- 게시글 검색 -->
-    <sql id="search">
-        <!-- 검색 키워드가 있을 때 -->
-        <if test="keyword != null and keyword != ''">
-            <choose>
-                <!-- 검색 유형이 있을 때 -->
-                <when test="searchType != null and searchType != ''">
-                    <choose>
-                        <when test="'title'.equals( searchType )">
-                            AND title LIKE CONCAT('%', #{keyword}, '%')
-                        </when>
-                        <when test="'content'.equals( searchType )">
-                            AND content LIKE CONCAT('%', #{keyword}, '%')
-                        </when>
-                        <when test="'writer'.equals( searchType )">
-                            AND writer LIKE CONCAT('%', #{keyword}, '%')
-                        </when>
-                    </choose>
-                </when>
-
-                <!-- 전체 검색일 때 -->
-                <otherwise>
-                    AND (
-                           title LIKE CONCAT('%', #{keyword}, '%')
-                        OR content LIKE CONCAT('%', #{keyword}, '%')
-                        OR writer LIKE CONCAT('%', #{keyword}, '%')
-                    )
-                </otherwise>
-            </choose>
-        </if>
-    </sql>
+    <select id="findAll" parameterType="com.study.common.dto.SearchDto" resultType="com.study.domain.post.PostResponse">
+        SELECT *
+        FROM tb_post
+        WHERE delete_yn = 0
+          AND type = #{type}
+        ORDER BY id DESC
+            LIMIT #{pagination.limitStart}, #{recordSize}
+    </select>
 
 
     <!-- 게시글 저장 -->
     <insert id="save" parameterType="com.study.domain.post.PostRequest" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO tb_post (
-            <include refid="postColumns" />
+        id,
+        title,
+        content,
+        writer,
+        view_cnt,
+        notice_yn,
+        delete_yn,
+        type,  <!-- 게시판 유형 추가 -->
+        created_date,
+        modified_date
         ) VALUES (
-              #{id}
-            , #{title}
-            , #{content}
-            , #{writer}
-            , 0
-            , #{noticeYn}
-            , 0
-            , NOW()
-            , NULL
+        #{id},
+        #{title},
+        #{content},
+        #{writer},
+        0,
+        #{noticeYn},
+        0,
+        #{type},  <!-- 게시판 유형 저장 -->
+        NOW(),
+        NULL
         )
     </insert>
 
@@ -71,27 +58,26 @@
     <!-- 게시글 상세정보 조회 -->
     <select id="findById" parameterType="long" resultType="com.study.domain.post.PostResponse">
         SELECT
-            <include refid="postColumns" />
+        <include refid="postColumns" />
         FROM
-            tb_post
+        tb_post
         WHERE
-            id = #{value}
+        id = #{value}
     </select>
-
 
     <!-- 게시글 수정 -->
     <update id="update" parameterType="com.study.domain.post.PostRequest">
         UPDATE tb_post
         SET
-              modified_date = NOW()
-            , title = #{title}
-            , content = #{content}
-            , writer = #{writer}
-            , notice_yn = #{noticeYn}
+        modified_date = NOW()
+        , title = #{title}
+        , content = #{content}
+        , writer = #{writer}
+        , notice_yn = #{noticeYn}
+        , type = #{type}  <!-- 게시판 유형 수정 -->
         WHERE
-            id = #{id}
+        id = #{id}
     </update>
-
 
     <!-- 게시글 삭제 -->
     <delete id="deleteById" parameterType="long">
@@ -102,31 +88,15 @@
             id = #{id}
     </delete>
 
-
-    <!-- 게시글 리스트 조회 -->
-    <select id="findAll" parameterType="com.study.common.dto.SearchDto" resultType="com.study.domain.post.PostResponse">
-        SELECT
-            <include refid="postColumns" />
-        FROM
-            tb_post
-        WHERE
-            delete_yn = 0
-            <include refid="search" />
-        ORDER BY
-            id DESC
-        LIMIT #{pagination.limitStart}, #{recordSize}
-    </select>
-
-
     <!-- 게시글 수 카운팅 -->
     <select id="count" parameterType="com.study.common.dto.SearchDto" resultType="int">
         SELECT
-            COUNT(*)
+        COUNT(*)
         FROM
-            tb_post
+        tb_post
         WHERE
-            delete_yn = 0
-            <include refid="search" />
+        delete_yn = 0
+        AND type = #{type} <!-- 게시판 유형 조건 추가 -->
     </select>
 
 </mapper>
