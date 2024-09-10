@@ -14,6 +14,7 @@ public class SearchDto {
     private String keyword;           // 검색 키워드
     private String searchType;        // 검색 유형
     private Pagination pagination;    // 페이지네이션 정보
+    private Integer type;  // 게시판 유형 추가
 
     public SearchDto() {
         this.page = 1;
