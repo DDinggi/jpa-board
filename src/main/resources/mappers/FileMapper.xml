@@ -5,7 +5,7 @@
 
     <!-- tb_file 테이블 전체 컬럼 -->
     <sql id="fileColumns">
-          id
+        id
         , post_id
         , original_name
         , save_name
@@ -15,81 +15,73 @@
         , deleted_date
     </sql>
 
-
-    <!-- 파일 정보 저장 -->
-    <insert id="saveAll" parameterType="list">
-        INSERT INTO tb_file (
-            <include refid="fileColumns" />
-        ) VALUES
-        <foreach item="file" collection="list" separator=",">
-        (
-              #{file.id}
-            , #{file.postId}
-            , #{file.originalName}
-            , #{file.saveName}
-            , #{file.size}
-            , 0
-            , NOW()
-            , NULL
-        )
-        </foreach>
+    <!-- 파일 정보를 저장하는 SQL -->
+    <insert id="saveFile" parameterType="com.study.domain.file.FileRequest">
+        INSERT INTO tb_file (post_id, original_name, save_name, size, delete_yn, created_date, deleted_date)
+        VALUES (#{postId}, #{originalName}, #{saveName}, #{size}, 0, NOW(), NULL)
     </insert>
 
+    <!-- 다수의 파일 정보를 저장하는 SQL -->
+    <insert id="saveAll" parameterType="list">
+        INSERT INTO tb_file (post_id, original_name, save_name, size, delete_yn, created_date, deleted_date)
+        VALUES
+        <foreach collection="files" item="file" separator=",">
+            (#{file.postId}, #{file.originalName}, #{file.saveName}, #{file.size}, 0, NOW(), NULL)
+        </foreach>
+    </insert>
 
     <!-- 파일 리스트 조회 -->
     <select id="findAllByPostId" parameterType="long" resultType="com.study.domain.file.FileResponse">
         SELECT
-            <include refid="fileColumns" />
+        <include refid="fileColumns" />
         FROM
-            tb_file
+        tb_file
         WHERE
-            delete_yn = 0
-            AND post_id = #{value}
+        delete_yn = 0
+        AND post_id = #{postId}
         ORDER BY
-            id
+        id
     </select>
-
 
     <!-- 파일 리스트 조회 -->
     <select id="findAllByIds" parameterType="list" resultType="com.study.domain.file.FileResponse">
         SELECT
-            <include refid="fileColumns" />
+        <include refid="fileColumns" />
         FROM
-            tb_file
+        tb_file
         WHERE
-            delete_yn = 0
-            AND id IN
-            <foreach item="id" collection="list" open="(" separator="," close=")">
+        delete_yn = 0
+        AND id IN
+        <foreach item="id" collection="list" open="(" separator="," close=")">
             #{id}
-            </foreach>
+        </foreach>
         ORDER BY
-            id
+        id
     </select>
-
 
     <!-- 파일 삭제 -->
     <delete id="deleteAllByIds" parameterType="list">
         UPDATE tb_file
         SET
-              delete_yn = 1
-            , deleted_date = NOW()
+        delete_yn = 1
+        , deleted_date = NOW()
         WHERE
-            id IN
-            <foreach item="id" collection="list" open="(" separator="," close=")">
+        id IN
+        <foreach item="id" collection="list" open="(" separator="," close=")">
             #{id}
-            </foreach>
+        </foreach>
     </delete>
-
 
     <!-- 파일 상세정보 조회 -->
     <select id="findById" parameterType="long" resultType="com.study.domain.file.FileResponse">
         SELECT
-            <include refid="fileColumns" />
+        <include refid="fileColumns" />
         FROM
-            tb_file
+        tb_file
         WHERE
-            delete_yn = 0
-            AND id = #{value}
+        delete_yn = 0
+        AND id = #{fileId}  <!-- 매개변수 이름을 'fileId'로 변경 -->
     </select>
 
 </mapper>
+

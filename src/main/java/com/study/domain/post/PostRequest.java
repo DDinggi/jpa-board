@@ -18,5 +18,6 @@ public class PostRequest {
     private Boolean noticeYn;                                 // 공지글 여부
     private List<MultipartFile> files = new ArrayList<>();    // 첨부파일 List
     private List<Long> removeFileIds = new ArrayList<>();     // 삭제할 첨부파일 id List
+    private Integer type; // 게시판 유형 추가
 
 }

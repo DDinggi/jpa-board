@@ -2,16 +2,18 @@ package com.study.common.file;
 
 import com.study.domain.file.FileRequest;
 import com.study.domain.file.FileResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -23,6 +25,7 @@ import java.util.UUID;
 @Component
 public class FileUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(FileUtils.class);
     private final String uploadPath = Paths.get("C:", "develop", "upload-files").toString();
 
     /**
@@ -34,9 +37,13 @@ public class FileUtils {
         List<FileRequest> files = new ArrayList<>();
         for (MultipartFile multipartFile : multipartFiles) {
             if (multipartFile.isEmpty()) {
+                logger.warn("업로드된 파일이 비어 있습니다. 파일을 건너뜁니다.");
                 continue;
             }
-            files.add(uploadFile(multipartFile));
+            FileRequest fileRequest = uploadFile(multipartFile);
+            if (fileRequest != null) {
+                files.add(fileRequest);
+            }
         }
         return files;
     }
@@ -47,27 +54,39 @@ public class FileUtils {
      * @return DB에 저장할 파일 정보
      */
     public FileRequest uploadFile(final MultipartFile multipartFile) {
-
         if (multipartFile.isEmpty()) {
+            logger.warn("업로드된 파일이 비어 있습니다.");
             return null;
         }
 
+        // 저장 파일명 생성
         String saveName = generateSaveFilename(multipartFile.getOriginalFilename());
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd")).toString();
-        String uploadPath = getUploadPath(today) + File.separator + saveName;
-        File uploadFile = new File(uploadPath);
+        // 날짜 기반 디렉토리 생성
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
+        // 업로드 경로 설정
+        Path uploadDirectory = Paths.get(uploadPath, today);
 
         try {
-            multipartFile.transferTo(uploadFile);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+            // 파일 저장 디렉토리 확인 및 생성
+            if (!Files.exists(uploadDirectory)) {
+                Files.createDirectories(uploadDirectory);
+                logger.info("디렉토리가 생성되었습니다: {}", uploadDirectory);
+            }
 
-        return FileRequest.builder()
-                .originalName(multipartFile.getOriginalFilename())
-                .saveName(saveName)
-                .size(multipartFile.getSize())
-                .build();
+            // 파일 저장 경로 설정
+            Path filePath = uploadDirectory.resolve(saveName);
+            multipartFile.transferTo(filePath.toFile());
+            logger.info("파일 저장 성공: {}", filePath.toString());
+
+            return FileRequest.builder()
+                    .originalName(multipartFile.getOriginalFilename())
+                    .saveName(today + "/" + saveName)  // 저장 경로를 포함하여 저장
+                    .size(multipartFile.getSize())
+                    .build();
+        } catch (IOException e) {
+            logger.error("파일 업로드 중 IOException 발생: {}", e.getMessage(), e);
+            return null;
+        }
     }
 
     /**
@@ -82,88 +101,20 @@ public class FileUtils {
     }
 
     /**
-     * 업로드 경로 반환
-     * @return 업로드 경로
-     */
-    private String getUploadPath() {
-        return makeDirectories(uploadPath);
-    }
-
-    /**
-     * 업로드 경로 반환
-     * @param addPath - 추가 경로
-     * @return 업로드 경로
-     */
-    private String getUploadPath(final String addPath) {
-        return makeDirectories(uploadPath + File.separator + addPath);
-    }
-
-    /**
-     * 업로드 폴더(디렉터리) 생성
-     * @param path - 업로드 경로
-     * @return 업로드 경로
-     */
-    private String makeDirectories(final String path) {
-        File dir = new File(path);
-        if (dir.exists() == false) {
-            dir.mkdirs();
-        }
-        return dir.getPath();
-    }
-
-    /**
-     * 파일 삭제 (from Disk)
-     * @param files - 삭제할 파일 정보 List
-     */
-    public void deleteFiles(final List<FileResponse> files) {
-        if (CollectionUtils.isEmpty(files)) {
-            return;
-        }
-        for (FileResponse file : files) {
-            String uploadedDate = file.getCreatedDate().toLocalDate().format(DateTimeFormatter.ofPattern("yyMMdd"));
-            deleteFile(uploadedDate, file.getSaveName());
-        }
-    }
-
-    /**
-     * 파일 삭제 (from Disk)
-     * @param addPath - 추가 경로
-     * @param filename - 파일명
-     */
-    private void deleteFile(final String addPath, final String filename) {
-        String filePath = Paths.get(uploadPath, addPath, filename).toString();
-        deleteFile(filePath);
-    }
-
-    /**
-     * 파일 삭제 (from Disk)
-     * @param filePath - 파일 경로
-     */
-    private void deleteFile(final String filePath) {
-        File file = new File(filePath);
-        if (file.exists()) {
-            file.delete();
-        }
-    }
-
-    /**
      * 다운로드할 첨부파일(리소스) 조회 (as Resource)
      * @param file - 첨부파일 상세정보
      * @return 첨부파일(리소스)
      */
     public Resource readFileAsResource(final FileResponse file) {
-        String uploadedDate = file.getCreatedDate().toLocalDate().format(DateTimeFormatter.ofPattern("yyMMdd"));
-        String filename = file.getSaveName();
-        Path filePath = Paths.get(uploadPath, uploadedDate, filename);
         try {
+            Path filePath = Paths.get(uploadPath, file.getSaveName());
             Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists() == false || resource.isFile() == false) {
+            if (!resource.exists() || !resource.isFile()) {
                 throw new RuntimeException("file not found : " + filePath.toString());
             }
             return resource;
         } catch (MalformedURLException e) {
-            throw new RuntimeException("file not found : " + filePath.toString());
+            throw new RuntimeException("file not found : " + file.getSaveName());
         }
     }
-
 }

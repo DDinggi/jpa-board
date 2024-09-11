@@ -1,43 +1,28 @@
 package com.study.domain.file;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 @Mapper
 public interface FileMapper {
 
-    /**
-     * 파일 정보 저장
-     * @param files - 파일 정보 리스트
-     */
-    void saveAll(List<FileRequest> files);
+    // 파일 정보를 저장하는 메서드 추가
+    void saveFile(FileRequest fileRequest);
 
-    /**
-     * 파일 리스트 조회
-     * @param postId - 게시글 번호 (FK)
-     * @return 파일 리스트
-     */
-    List<FileResponse> findAllByPostId(Long postId);
+    // 다수의 파일 정보를 저장하는 메서드
+    void saveAll(@Param("files") List<FileRequest> files);
 
-    /**
-     * 파일 리스트 조회
-     * @param ids - PK 리스트
-     * @return 파일 리스트
-     */
-    List<FileResponse> findAllByIds(List<Long> ids);
+    // 특정 게시물의 모든 파일을 조회하는 메서드
+    List<FileResponse> findAllByPostId(@Param("postId") Long postId);
 
-    /**
-     * 파일 삭제
-     * @param ids - PK 리스트
-     */
-    void deleteAllByIds(List<Long> ids);
+    // 특정 ID로 파일들을 조회하는 메서드
+    List<FileResponse> findAllByIds(@Param("ids") List<Long> ids);
 
-    /**
-     * 파일 상세정보 조회
-     * @param id - PK
-     * @return 파일 상세정보
-     */
-    FileResponse findById(Long id);
+    // 특정 파일을 조회하는 메서드
+    FileResponse findById(@Param("fileId") Long fileId);
 
+    // 다수의 파일을 삭제하는 메서드
+    void deleteAllByIds(@Param("ids") List<Long> ids);
 }

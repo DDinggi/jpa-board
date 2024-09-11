@@ -1,26 +1,17 @@
 package com.study.domain.file;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class FileRequest {
-
-    private Long id;                // 파일 번호 (PK)
-    private Long postId;            // 게시글 번호 (FK)
-    private String originalName;    // 원본 파일명
-    private String saveName;        // 저장 파일명
-    private long size;              // 파일 크기
-
-    @Builder
-    public FileRequest(String originalName, String saveName, long size) {
-        this.originalName = originalName;
-        this.saveName = saveName;
-        this.size = size;
-    }
-
-    public void setPostId(Long postId) {
-        this.postId = postId;
-    }
-
+    private Long postId;  // 게시물 ID 필드 추가
+    private String originalName;
+    private String saveName;
+    private long size;
 }

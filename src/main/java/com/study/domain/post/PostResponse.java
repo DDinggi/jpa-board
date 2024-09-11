@@ -16,5 +16,6 @@ public class PostResponse {
     private Boolean deleteYn;              // 삭제 여부
     private LocalDateTime createdDate;     // 생성일시
     private LocalDateTime modifiedDate;    // 최종 수정일시
+    private Integer type; // 게시판 유형 추가
 
 }

@@ -2,15 +2,13 @@ package com.study.domain.post;
 
 import com.study.common.dto.MessageDto;
 import com.study.common.dto.SearchDto;
-import com.study.common.file.FileUtils;
 import com.study.common.paging.PagingResponse;
-import com.study.domain.file.FileRequest;
-import com.study.domain.file.FileResponse;
-import com.study.domain.file.FileService;
+import com.study.domain.file.FileService;  // FileService import
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,101 +19,98 @@ import java.util.Map;
 public class PostController {
 
     private final PostService postService;
-    private final FileService fileService;
-    private final FileUtils fileUtils;
-
-    // 사용자에게 메시지를 전달하고, 페이지를 리다이렉트 한다.
-    private String showMessageAndRedirect(final MessageDto params, Model model) {
-        model.addAttribute("params", params);
-        return "common/messageRedirect";
-    }
-
-
-    // 쿼리 스트링 파라미터를 Map에 담아 반환
-    private Map<String, Object> queryParamsToMap(final SearchDto queryParams) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("page", queryParams.getPage());
-        data.put("recordSize", queryParams.getRecordSize());
-        data.put("pageSize", queryParams.getPageSize());
-        data.put("keyword", queryParams.getKeyword());
-        data.put("searchType", queryParams.getSearchType());
-        return data;
-    }
-
+    private final FileService fileService; // 파일 저장을 위한 서비스 추가
 
     // 게시글 작성 페이지
     @GetMapping("/post/write.do")
-    public String openPostWrite(@RequestParam(value = "id", required = false) final Long id, Model model) {
+    public String openPostWrite(@RequestParam(value = "id", required = false) Long id,
+                                @RequestParam(value = "type", defaultValue = "1") Integer type,
+                                Model model) {
         if (id != null) {
             PostResponse post = postService.findPostById(id);
-            model.addAttribute("post", post);
+            if (post != null) {
+                model.addAttribute("post", post);
+            }
         }
+        model.addAttribute("boardType", type); // boardType 값을 모델에 설정
         return "post/write";
     }
 
-
-    // 게시글 리스트 페이지
-    @GetMapping("/post/list.do")
-    public String openPostList(@ModelAttribute("params") final SearchDto params, Model model) {
-        PagingResponse<PostResponse> response = postService.findAllPost(params);
-        model.addAttribute("response", response);
-        return "post/list";
-    }
-
-
-    // 게시글 상세 페이지
     @GetMapping("/post/view.do")
-    public String openPostView(@RequestParam final Long id, Model model) {
+    public String openPostView(@RequestParam("id") Long id,
+                               @RequestParam(value = "type", defaultValue = "1") Integer type,
+                               Model model) {
         PostResponse post = postService.findPostById(id);
+
+        if (post == null) {
+            return "redirect:/post/list.do?type=" + type; // 게시글이 없을 경우 리스트로 리다이렉트
+        }
+
         model.addAttribute("post", post);
+        model.addAttribute("boardType", type);
         return "post/view";
     }
 
+    // 게시글 리스트 페이지
+    @GetMapping("/post/list.do")
+    public String openPostList(@ModelAttribute("params") final SearchDto params,
+                               @RequestParam(value = "type", defaultValue = "1") Integer type, Model model) {
+        params.setType(type);
+        PagingResponse<PostResponse> response = postService.findAllPost(params);
+        model.addAttribute("response", response);
+        model.addAttribute("boardType", type);
 
-    // 신규 게시글 생성
+        return "post/list";
+    }
+
     @PostMapping("/post/save.do")
-    public String savePost(final PostRequest params, Model model) {
-        Long id = postService.savePost(params);
-        List<FileRequest> files = fileUtils.uploadFiles(params.getFiles());
-        fileService.saveFiles(id, files);
-        MessageDto message = new MessageDto("게시글 생성이 완료되었습니다.", "/post/list.do", RequestMethod.GET, null);
-        return showMessageAndRedirect(message, model);
+    @ResponseBody
+    public Map<String, Object> savePost(@ModelAttribute PostRequest params,
+                                        @RequestParam("type") Integer type,
+                                        @RequestParam("files") List<MultipartFile> files) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            // 게시글 저장 로직...
+            Long id = postService.savePost(params);
+            for (MultipartFile file : files) {
+                if (!file.isEmpty()) {
+                    fileService.saveFile(id, file);
+                }
+            }
+
+            response.put("success", true);
+            response.put("message", "저장이 완료되었습니다.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "저장 중 오류가 발생했습니다: " + e.getMessage());
+        }
+        return response;
     }
 
 
-    // 기존 게시글 수정
-    @PostMapping("/post/update.do")
-    public String updatePost(final PostRequest params, final SearchDto queryParams, Model model) {
 
-        // 1. 게시글 정보 수정
+    @PostMapping("/post/update.do")
+    public String updatePost(@ModelAttribute PostRequest params,
+                             @RequestParam("type") Integer type,
+                             @RequestParam("files") List<MultipartFile> files,
+                             Model model) {
+        params.setType(type);  // type 값을 설정
+
         postService.updatePost(params);
 
-        // 2. 파일 업로드 (to disk)
-        List<FileRequest> uploadFiles = fileUtils.uploadFiles(params.getFiles());
+        saveFiles(params.getId(), files); // 파일 저장 로직
 
-        // 3. 파일 정보 저장 (to database)
-        fileService.saveFiles(params.getId(), uploadFiles);
-
-        // 4. 삭제할 파일 정보 조회 (from database)
-        List<FileResponse> deleteFiles = fileService.findAllFileByIds(params.getRemoveFileIds());
-
-        // 5. 파일 삭제 (from disk)
-        fileUtils.deleteFiles(deleteFiles);
-
-        // 6. 파일 삭제 (from database)
-        fileService.deleteAllFileByIds(params.getRemoveFileIds());
-
-        MessageDto message = new MessageDto("게시글 수정이 완료되었습니다.", "/post/list.do", RequestMethod.GET, queryParamsToMap(queryParams));
-        return showMessageAndRedirect(message, model);
+        // 리다이렉트 URL 설정
+        return "redirect:/post/view.do?type=" + type + "&id=" + params.getId();
     }
 
-
-    // 게시글 삭제
-    @PostMapping("/post/delete.do")
-    public String deletePost(@RequestParam final Long id, final SearchDto queryParams, Model model) {
-        postService.deletePost(id);
-        MessageDto message = new MessageDto("게시글 삭제가 완료되었습니다.", "/post/list.do", RequestMethod.GET, queryParamsToMap(queryParams));
-        return showMessageAndRedirect(message, model);
+    // 파일 저장 로직을 별도의 메서드로 추출
+    private void saveFiles(Long postId, List<MultipartFile> files) {
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                fileService.saveFile(postId, file); // 파일 저장 로직
+                System.out.println("파일이 저장되었습니다: " + file.getOriginalFilename());
+            }
+        }
     }
-
 }
